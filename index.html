@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Menu">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2D6A4F">
+<title>Menu de la semaine</title>
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%232D6A4F'/%3E%3Ctext x='96' y='130' font-size='100' text-anchor='middle'%3E%F0%9F%8D%BD%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --bg: #F7F5F0; --surface: #FFFFFF; --border: #E8E4DC;
+  --text: #1A1814; --muted: #8A8479; --accent: #2D6A4F;
+  --accent-light: #E8F4EE; --accent-mid: #52B788;
+  --danger: #C1440E; --danger-light: #FDF0EB;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; min-height: 100dvh; overscroll-behavior: none; }
+header { background: var(--surface); border-bottom: 1px solid var(--border); padding: calc(var(--safe-top) + 12px) 16px 0; position: sticky; top: 0; z-index: 50; }
+.header-inner { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; }
+header h1 { font-size: 18px; font-weight: 600; letter-spacing: -.02em; }
+header p { font-size: 12px; color: var(--muted); margin-top: 1px; }
+.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; flex-shrink: 0; transition: background .3s; }
+.sync-dot.online { background: var(--accent-mid); }
+.sync-dot.syncing { background: #f59e0b; animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:.4} 50%{opacity:1} }
+.tab-bar { display: flex; border-top: 1px solid var(--border); margin-top: 8px; }
+.tab-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 500; color: var(--muted); border: none; background: transparent; font-family: inherit; cursor: pointer; border-bottom: 2px solid transparent; transition: color .15s, border-color .15s; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+main { padding: 12px 12px calc(var(--safe-bottom) + 80px); }
+.page { display: none; }
+.page.active { display: block; }
+.week-grid { display: grid; grid-template-columns: 48px repeat(7, minmax(0,1fr)); gap: 4px; }
+.cell-header { font-size: 10px; font-weight: 600; color: var(--muted); text-align: center; padding: 5px 2px; text-transform: uppercase; letter-spacing: .05em; }
+.row-label { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; padding: 4px 0; }
+.meal-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 6px; min-height: 68px; cursor: pointer; display: flex; flex-direction: column; gap: 4px; transition: border-color .15s; -webkit-user-select: none; user-select: none; }
+.meal-cell:active { background: var(--bg); }
+.meal-cell.filled { border-color: var(--accent-mid); }
+.meal-name { font-size: 11px; font-weight: 500; color: var(--text); line-height: 1.3; }
+.meal-badge { font-size: 9px; font-weight: 600; background: var(--accent-light); color: var(--accent); padding: 2px 5px; border-radius: 20px; width: fit-content; }
+.meal-add { margin: auto; text-align: center; font-size: 18px; opacity: .25; }
+.day-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.day-card-header { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.day-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-mid); }
+.slot-row { display: flex; align-items: center; padding: 10px 14px; gap: 10px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+.slot-row:last-child { border-bottom: none; }
+.slot-row:active { background: var(--bg); }
+.slot-icon { font-size: 16px; width: 24px; text-align: center; flex-shrink: 0; }
+.slot-label { font-size: 12px; color: var(--muted); width: 36px; flex-shrink: 0; }
+.slot-meal { font-size: 13px; font-weight: 500; color: var(--text); flex: 1; }
+.slot-meal.empty { color: var(--muted); font-weight: 400; font-style: italic; }
+.slot-arrow { color: var(--muted); font-size: 16px; }
+.courses-toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+.cat-section { margin-bottom: 14px; }
+.cat-header { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; padding: 0 0 6px; border-bottom: 1px solid var(--border); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.course-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 5px; cursor: pointer; transition: opacity .15s; -webkit-user-select: none; user-select: none; }
+.course-item.checked { opacity: .45; }
+.course-item.checked .course-name { text-decoration: line-through; }
+.course-check { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border); flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: background .15s, border-color .15s; }
+.course-item.checked .course-check { background: var(--accent-mid); border-color: var(--accent-mid); }
+.course-name { font-size: 14px; color: var(--text); flex: 1; }
+.course-del { font-size: 20px; color: var(--muted); padding: 0 4px; line-height: 1; }
+.empty-courses { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+.empty-courses .big { font-size: 40px; margin-bottom: 10px; }
+.empty-courses p { font-size: 14px; line-height: 1.6; }
+.add-item-row { display: flex; gap: 6px; margin-bottom: 14px; }
+.add-item-row input { flex: 1; border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-family: inherit; font-size: 14px; background: var(--surface); color: var(--text); outline: none; min-width: 0; }
+.add-item-row input:focus { border-color: var(--accent-mid); }
+.add-item-row select { border: 1px solid var(--border); border-radius: 10px; padding: 10px 6px; font-family: inherit; font-size: 13px; background: var(--surface); color: var(--text); outline: none; }
+.bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--surface); border-top: 1px solid var(--border); padding: 10px 16px calc(var(--safe-bottom) + 10px); display: flex; gap: 8px; z-index: 50; }
+.btn { display: flex; align-items: center; justify-content: center; gap: 5px; font-family: inherit; font-size: 13px; font-weight: 500; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; flex: 1; -webkit-user-select: none; user-select: none; }
+.btn:active { background: var(--bg); }
+.btn.accent { background: var(--accent); color: #fff; border-color: var(--accent); flex: 2; }
+.btn.accent:active { background: #235E44; }
+.btn.danger-btn { color: var(--danger); }
+.btn.danger-btn:active { background: var(--danger-light); }
+.btn.sm { padding: 8px 12px; font-size: 12px; flex: none; }
+.overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 200; align-items: flex-end; justify-content: center; }
+.overlay.open { display: flex; }
+.modal { background: var(--surface); border-radius: 20px 20px 0 0; padding: 0 0 calc(var(--safe-bottom) + 16px); width: 100%; max-width: 480px; animation: slideup .2s ease; max-height: 90vh; overflow-y: auto; }
+@keyframes slideup { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.modal-handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 10px auto 14px; }
+.modal-body { padding: 0 20px 16px; }
+.modal h2 { font-size: 18px; font-weight: 600; margin-bottom: 2px; }
+.modal .ctx { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+.modal input { width: 100%; border: 1.5px solid var(--border); border-radius: 12px; padding: 12px 14px; font-family: inherit; font-size: 16px; background: var(--bg); color: var(--text); outline: none; appearance: none; }
+.modal input:focus { border-color: var(--accent-mid); }
+.modal-actions { display: flex; gap: 8px; margin-top: 12px; }
+.modal-actions .btn { font-size: 15px; padding: 12px; }
+.share-text { background: var(--bg); border-radius: 10px; padding: 14px; font-size: 13px; line-height: 1.8; color: var(--text); white-space: pre-wrap; max-height: 300px; overflow-y: auto; border: 1px solid var(--border); margin-bottom: 12px; font-family: monospace; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 5px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.toast { position: fixed; bottom: calc(var(--safe-bottom) + 90px); left: 50%; transform: translateX(-50%); background: var(--text); color: #fff; padding: 9px 20px; border-radius: 20px; font-size: 14px; z-index: 300; opacity: 0; transition: opacity .2s; pointer-events: none; white-space: nowrap; }
+.toast.show { opacity: 1; }
+.install-banner { background: var(--accent-light); border: 1px solid var(--accent-mid); border-radius: 12px; margin-bottom: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.install-banner .ib-text { flex: 1; font-size: 13px; line-height: 1.4; color: var(--accent); }
+.install-banner .ib-text strong { font-weight: 600; }
+.install-banner .ib-close { background: none; border: none; font-size: 18px; color: var(--accent); cursor: pointer; padding: 0 4px; }
+.menu-toolbar { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div><h1>🍽 Menu de la semaine</h1><p id="week-label">Chargement…</p></div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <span style="font-size:11px;color:var(--muted)" id="sync-label">…</span>
+      <div class="sync-dot" id="sync-dot"></div>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('menu')">📅 Menu</button>
+    <button class="tab-btn" onclick="switchTab('liste')">📋 Liste</button>
+    <button class="tab-btn" onclick="switchTab('courses')">🛒 Courses</button>
+  </div>
+</header>
+
+<main>
+  <div id="install-banner-wrap"></div>
+
+  <div class="page active" id="page-menu">
+    <div class="menu-toolbar">
+      <button class="btn sm" id="btn-grid" onclick="switchMenuView('grid')" style="border-color:var(--accent);color:var(--accent)">Grille</button>
+      <button class="btn sm" id="btn-mlist" onclick="switchMenuView('mlist')">Liste</button>
+      <button class="btn sm accent" onclick="openShare()" style="margin-left:auto">Partager ↗</button>
+    </div>
+    <div id="menu-grid-view"><div class="week-grid" id="grid"></div></div>
+    <div id="menu-list-view" style="display:none"><div id="mlist"></div></div>
+  </div>
+
+  <div class="page" id="page-liste">
+    <div id="full-list"></div>
+  </div>
+
+  <div class="page" id="page-courses">
+    <div class="courses-toolbar">
+      <button class="btn sm accent" id="gen-btn" onclick="generateCourses()">✨ Générer depuis le menu</button>
+      <button class="btn sm danger-btn" onclick="clearCourses()">🗑 Vider</button>
+    </div>
+    <div class="add-item-row">
+      <input type="text" id="manual-item" placeholder="Ajouter un article…" onkeydown="if(event.key==='Enter')addManualItem()">
+      <select id="manual-cat">
+        <option value="Fruits & légumes">🥦</option>
+        <option value="Viandes & poissons">🥩</option>
+        <option value="Produits laitiers">🧀</option>
+        <option value="Épicerie">🛒</option>
+        <option value="Boulangerie">🥖</option>
+        <option value="Surgelés">❄️</option>
+        <option value="Boissons">🥤</option>
+        <option value="Autre">📦</option>
+      </select>
+      <button class="btn sm accent" onclick="addManualItem()">＋</button>
+    </div>
+    <div id="courses-list"></div>
+  </div>
+</main>
+
+<div class="bottom-bar" id="bottom-bar">
+  <button class="btn accent" onclick="openAdd()">＋ Ajouter un repas</button>
+  <button class="btn danger-btn" onclick="clearAll()">🗑</button>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal-content"></div></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const app = initializeApp({
+  apiKey: "AIzaSyA3rKsia8o1mCDFuKeNR6NckVnZ6sbHqfQ",
+  authDomain: "menu-famille-41f64.firebaseapp.com",
+  projectId: "menu-famille-41f64",
+  databaseURL: "https://menu-famille-41f64-default-rtdb.europe-west1.firebasedatabase.app",
+});
+const db = getDatabase(app);
+const menuRef = ref(db, 'menu');
+const coursesRef = ref(db, 'courses');
+
+const DAYS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+const DAYS_FULL = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
+const SLOTS = ['midi','soir'];
+const SI = { midi:'☀️', soir:'🌙' };
+const CATS = {'Fruits & légumes':'🥦','Viandes & poissons':'🥩','Produits laitiers':'🧀','Épicerie':'🛒','Boulangerie':'🥖','Surgelés':'❄️','Boissons':'🥤','Autre':'📦'};
+
+let meals={}, courses={}, currentTab='menu', menuView='grid', currentCell=null;
+const key=(d,s)=>d+'-'+s;
+
+function setSyncing(s){ const dot=document.getElementById('sync-dot'),lbl=document.getElementById('sync-label'); if(s==='online'){dot.className='sync-dot online';lbl.textContent='Synchronisé';}else if(s==='syncing'){dot.className='sync-dot syncing';lbl.textContent='Sync…';}else{dot.className='sync-dot';lbl.textContent='Hors ligne';} }
+
+onValue(menuRef,snap=>{ meals=snap.val()||{}; setSyncing('online'); refreshMenu(); },()=>setSyncing('offline'));
+onValue(coursesRef,snap=>{ courses=snap.val()||{}; if(currentTab==='courses') buildCourses(); });
+
+const saveMenu=()=>{ setSyncing('syncing'); set(menuRef,meals).then(()=>setSyncing('online')).catch(()=>setSyncing('offline')); };
+const saveCourses=()=>set(coursesRef,courses);
+
+function setWeekLabel(){
+  const now=new Date(),day=now.getDay();
+  const mon=new Date(now); mon.setDate(now.getDate()-(day===0?6:day-1));
+  const sun=new Date(mon); sun.setDate(mon.getDate()+6);
+  const f=d=>d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+  document.getElementById('week-label').textContent=`Semaine du ${f(mon)} au ${f(sun)}`;
+}
+
+function switchTab(tab){
+  currentTab=tab;
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',['menu','liste','courses'][i]===tab));
+  document.getElementById('bottom-bar').style.display=tab==='menu'?'flex':'none';
+  if(tab==='liste') buildFullList();
+  if(tab==='courses') buildCourses();
+}
+window.switchTab=switchTab;
+
+function switchMenuView(v){
+  menuView=v;
+  document.getElementById('menu-grid-view').style.display=v==='grid'?'block':'none';
+  document.getElementById('menu-list-view').style.display=v==='mlist'?'block':'none';
+  document.getElementById('btn-grid').style.cssText=v==='grid'?'border-color:var(--accent);color:var(--accent)':'';
+  document.getElementById('btn-mlist').style.cssText=v==='mlist'?'border-color:var(--accent);color:var(--accent)':'';
+  if(v==='mlist') buildMList();
+}
+window.switchMenuView=switchMenuView;
+
+function buildGrid(){
+  const g=document.getElementById('grid'); g.innerHTML='';
+  g.appendChild(document.createElement('div'));
+  DAYS.forEach(d=>{ const h=document.createElement('div'); h.className='cell-header'; h.textContent=d; g.appendChild(h); });
+  SLOTS.forEach(s=>{
+    const l=document.createElement('div'); l.className='row-label';
+    l.innerHTML=`<span style="font-size:14px">${SI[s]}</span>${s}`; g.appendChild(l);
+    DAYS.forEach((d,i)=>{
+      const c=document.createElement('div');
+      c.className='meal-cell'+(meals[key(d,s)]?' filled':'');
+      c.onclick=()=>openCell(d,DAYS_FULL[i],s);
+      const m=meals[key(d,s)];
+      c.innerHTML=m?`<div class="meal-badge">✓</div><div class="meal-name">${m}</div>`:`<div class="meal-add">+</div>`;
+      g.appendChild(c);
+    });
+  });
+}
+
+function buildDayCards(elId){
+  const l=document.getElementById(elId); l.innerHTML='';
+  DAYS_FULL.forEach((dfull,i)=>{
+    const d=DAYS[i],card=document.createElement('div'); card.className='day-card';
+    let html=`<div class="day-card-header"><div class="day-dot"></div>${dfull}</div>`;
+    SLOTS.forEach(s=>{ const m=meals[key(d,s)]; html+=`<div class="slot-row" onclick="window._oc('${d}','${dfull}','${s}')"><span class="slot-icon">${SI[s]}</span><span class="slot-label">${s.charAt(0).toUpperCase()+s.slice(1)}</span><span class="slot-meal${m?'':' empty'}">${m||'Non planifié'}</span><span class="slot-arrow">›</span></div>`; });
+    card.innerHTML=html; l.appendChild(card);
+  });
+}
+const buildMList=()=>buildDayCards('mlist');
+const buildFullList=()=>buildDayCards('full-list');
+const refreshMenu=()=>{ buildGrid(); if(menuView==='mlist') buildMList(); };
+
+function buildCourses(){
+  const el=document.getElementById('courses-list'); if(!el) return;
+  if(!Object.keys(courses).length){ el.innerHTML=`<div class="empty-courses"><div class="big">🛒</div><p>Liste vide.<br>Génère depuis le menu ou ajoute manuellement.</p></div>`; return; }
+  const byCat={};
+  Object.entries(courses).forEach(([id,item])=>{ if(!byCat[item.cat]) byCat[item.cat]=[]; byCat[item.cat].push({id,...item}); });
+  let html='';
+  Object.keys(CATS).forEach(cat=>{
+    const items=(byCat[cat]||[]).sort((a,b)=>a.name.localeCompare(b.name)); if(!items.length) return;
+    html+=`<div class="cat-section"><div class="cat-header"><span>${CATS[cat]}</span>${cat}</div>`;
+    items.forEach(item=>{ html+=`<div class="course-item${item.checked?' checked':''}" onclick="window._ti('${item.id}')"><div class="course-check">${item.checked?'<svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" stroke-width="2.5"><polyline points="2,6 5,9 10,3"/></svg>':''}</div><span class="course-name">${item.name}</span><span class="course-del" onclick="event.stopPropagation();window._di('${item.id}')">×</span></div>`; });
+    html+='</div>';
+  });
+  el.innerHTML=html||`<div class="empty-courses"><div class="big">✅</div><p>Toutes les courses sont faites !</p></div>`;
+}
+
+window._ti=id=>{ if(courses[id]){courses[id].checked=!courses[id].checked;saveCourses();buildCourses();} };
+window._di=id=>{ delete courses[id]; saveCourses(); buildCourses(); };
+
+window.addManualItem=()=>{
+  const inp=document.getElementById('manual-item'),sel=document.getElementById('manual-cat');
+  const name=inp.value.trim(); if(!name) return;
+  courses['item-'+Date.now()]={name,cat:sel.value,checked:false};
+  saveCourses(); buildCourses(); inp.value=''; inp.focus();
+};
+
+window.clearCourses=()=>{ if(!Object.keys(courses).length) return; if(confirm('Vider toute la liste de courses ?')){courses={};saveCourses();buildCourses();} };
+
+window.generateCourses=()=>{
+  const mealsFlat=Object.values(meals).filter(Boolean);
+  if(!mealsFlat.length){showToast('Ajoute d\'abord des repas dans le menu');return;}
+
+  // Liste d'ingrédients courants par mot-clé détecté dans le nom du repas
+  const rules=[
+    // Viandes & poissons
+    {kw:['poulet','volaille'],items:[{name:'Poulet',cat:'Viandes & poissons'}]},
+    {kw:['boeuf','bœuf','steak','hachée','hachee','bolognaise','burger'],items:[{name:'Bœuf haché',cat:'Viandes & poissons'}]},
+    {kw:['porc','côte','cote','rôti','roti'],items:[{name:'Porc',cat:'Viandes & poissons'}]},
+    {kw:['saumon'],items:[{name:'Saumon',cat:'Viandes & poissons'}]},
+    {kw:['thon'],items:[{name:'Thon',cat:'Viandes & poissons'}]},
+    {kw:['crevette'],items:[{name:'Crevettes',cat:'Viandes & poissons'}]},
+    {kw:['cabillaud','poisson'],items:[{name:'Poisson blanc',cat:'Viandes & poissons'}]},
+    {kw:['jambon'],items:[{name:'Jambon',cat:'Viandes & poissons'}]},
+    {kw:['lardons','bacon'],items:[{name:'Lardons',cat:'Viandes & poissons'}]},
+    // Féculents
+    {kw:['pâtes','pasta','spaghetti','tagliatelle','penne','bolognaise','carbonara'],items:[{name:'Pâtes',cat:'Épicerie'}]},
+    {kw:['riz'],items:[{name:'Riz',cat:'Épicerie'}]},
+    {kw:['pomme de terre','pommes de terre','gratin','purée','puree'],items:[{name:'Pommes de terre',cat:'Fruits & légumes'}]},
+    {kw:['quinoa'],items:[{name:'Quinoa',cat:'Épicerie'}]},
+    {kw:['lentille'],items:[{name:'Lentilles',cat:'Épicerie'}]},
+    {kw:['pizza'],items:[{name:'Pâte à pizza',cat:'Boulangerie'},{name:'Sauce tomate',cat:'Épicerie'},{name:'Fromage râpé',cat:'Produits laitiers'}]},
+    {kw:['burger','hamburger'],items:[{name:'Pains burger',cat:'Boulangerie'},{name:'Salade',cat:'Fruits & légumes'}]},
+    {kw:['wrap','tacos'],items:[{name:'Tortillas',cat:'Épicerie'}]},
+    // Légumes courants
+    {kw:['tomate'],items:[{name:'Tomates',cat:'Fruits & légumes'}]},
+    {kw:['courgette'],items:[{name:'Courgettes',cat:'Fruits & légumes'}]},
+    {kw:['carotte'],items:[{name:'Carottes',cat:'Fruits & légumes'}]},
+    {kw:['brocoli'],items:[{name:'Brocolis',cat:'Fruits & légumes'}]},
+    {kw:['épinard','epinard'],items:[{name:'Épinards',cat:'Fruits & légumes'}]},
+    {kw:['poivron'],items:[{name:'Poivrons',cat:'Fruits & légumes'}]},
+    {kw:['champignon'],items:[{name:'Champignons',cat:'Fruits & légumes'}]},
+    {kw:['salade','caesar'],items:[{name:'Salade verte',cat:'Fruits & légumes'}]},
+    {kw:['ratatouille'],items:[{name:'Courgettes',cat:'Fruits & légumes'},{name:'Aubergines',cat:'Fruits & légumes'},{name:'Tomates',cat:'Fruits & légumes'},{name:'Poivrons',cat:'Fruits & légumes'}]},
+    // Produits laitiers
+    {kw:['gratin','crème','creme','quiche','lasagne'],items:[{name:'Crème fraîche',cat:'Produits laitiers'},{name:'Fromage râpé',cat:'Produits laitiers'}]},
+    {kw:['omelette','oeuf','œuf'],items:[{name:'Œufs',cat:'Produits laitiers'}]},
+    {kw:['carbonara'],items:[{name:'Parmesan',cat:'Produits laitiers'},{name:'Œufs',cat:'Produits laitiers'}]},
+    // Épicerie de base
+    {kw:['soupe','velouté','veloute'],items:[{name:'Bouillon cube',cat:'Épicerie'}]},
+    {kw:['curry'],items:[{name:'Pâte de curry',cat:'Épicerie'},{name:'Lait de coco',cat:'Épicerie'}]},
+    {kw:['wok','asiatique','nouille'],items:[{name:'Sauce soja',cat:'Épicerie'},{name:'Nouilles',cat:'Épicerie'}]},
+  ];
+
+  // Ingrédients de base toujours utiles
+  const base=[
+    {name:'Huile d\'olive',cat:'Épicerie'},
+    {name:'Sel & poivre',cat:'Épicerie'},
+    {name:'Ail',cat:'Fruits & légumes'},
+    {name:'Oignons',cat:'Fruits & légumes'},
+  ];
+
+  const toAdd={};
+  const addItem=(name,cat)=>{ const k=name.toLowerCase(); if(!toAdd[k]) toAdd[k]={name,cat}; };
+
+  base.forEach(i=>addItem(i.name,i.cat));
+
+  const allText=mealsFlat.join(' ').toLowerCase();
+  rules.forEach(rule=>{
+    if(rule.kw.some(kw=>allText.includes(kw))) rule.items.forEach(i=>addItem(i.name,i.cat));
+  });
+
+  const existing=new Set(Object.values(courses).map(c=>c.name.toLowerCase()));
+  let added=0;
+  Object.values(toAdd).forEach(item=>{
+    if(!existing.has(item.name.toLowerCase())){
+      courses['item-'+Date.now()+'-'+Math.random().toString(36).slice(2,6)]={name:item.name,cat:item.cat,checked:false};
+      added++;
+    }
+  });
+
+  saveCourses(); buildCourses();
+  showToast(added>0?`${added} articles ajoutés ✓`:'Articles déjà présents dans la liste');
+};
+
+function openCell(d,dfull,s){
+  currentCell={d,dfull,s}; const m=meals[key(d,s)]||'';
+  showModal(`<div class="modal-handle"></div><div class="modal-body"><h2>${dfull}</h2><p class="ctx">${SI[s]} ${s.charAt(0).toUpperCase()+s.slice(1)} · repas rapide</p><input type="text" id="meal-input" placeholder="Ex: Saumon grillé avec riz…" value="${m}" autocomplete="off"><div class="modal-actions"><button class="btn" onclick="window._cm()">Annuler</button>${m?`<button class="btn danger-btn" onclick="window._dm()">Supprimer</button>`:''}<button class="btn accent" onclick="window._sc()">Enregistrer</button></div></div>`);
+  setTimeout(()=>{ const i=document.getElementById('meal-input'); if(i){i.focus();i.select();} },250);
+}
+window._oc=openCell;
+
+window.openAdd=()=>{
+  let opts='';
+  DAYS_FULL.forEach((dfull,i)=>SLOTS.forEach(s=>{ if(!meals[key(DAYS[i],s)]) opts+=`<div class="slot-row" onclick="window._oc('${DAYS[i]}','${dfull}','${s}')"><span class="slot-icon">${SI[s]}</span><span style="font-size:13px;font-weight:500">${dfull} — ${s}</span><span class="slot-arrow" style="margin-left:auto">›</span></div>`; }));
+  if(!opts){showToast('Tous les créneaux sont remplis !');return;}
+  showModal(`<div class="modal-handle"></div><div class="modal-body"><h2>Quel créneau ?</h2><p class="ctx">Créneaux disponibles</p></div><div style="max-height:60vh;overflow-y:auto">${opts}</div><div style="padding:0 20px 4px"><button class="btn" style="width:100%" onclick="window._cm()">Annuler</button></div>`);
+};
+
+window._sc=()=>{ if(!currentCell) return; const inp=document.getElementById('meal-input'),val=inp&&inp.value.trim(); if(val){meals[key(currentCell.d,currentCell.s)]=val;saveMenu();} closeModal(); refreshMenu(); };
+window._dm=()=>{ if(!currentCell) return; delete meals[key(currentCell.d,currentCell.s)]; saveMenu(); closeModal(); refreshMenu(); };
+
+window.clearAll=()=>{ showModal(`<div class="modal-handle"></div><div class="modal-body"><h2>Effacer tout ?</h2><p class="ctx">Supprime tous les repas pour toute la famille.</p><div class="modal-actions" style="margin-top:20px"><button class="btn" onclick="window._cm()">Annuler</button><button class="btn danger-btn" onclick="window._dc()">Oui, tout effacer</button></div></div>`); };
+window._dc=()=>{ meals={}; saveMenu(); closeModal(); refreshMenu(); showToast('Menu effacé'); };
+
+window.openShare=()=>{
+  let txt='🍽 Menu de la semaine\n\n';
+  DAYS_FULL.forEach((dfull,i)=>{ const d=DAYS[i],m1=meals[key(d,'midi')],m2=meals[key(d,'soir')]; if(!m1&&!m2) return; txt+=`📅 ${dfull}\n`; if(m1) txt+=`  ☀️ Midi : ${m1}\n`; if(m2) txt+=`  🌙 Soir : ${m2}\n`; txt+='\n'; });
+  if(!txt.includes('📅')) txt+='(aucun repas planifié)\n';
+  window._shareTxt=txt;
+  showModal(`<div class="modal-handle"></div><div class="modal-body"><h2>Partager le menu</h2><p class="ctx">Envoie par WhatsApp, SMS ou email</p><div class="share-text">${txt.replace(/\n/g,'<br>')}</div><div class="modal-actions"><button class="btn" onclick="window._cm()">Fermer</button><button class="btn accent" onclick="window._ds()">Partager ↗</button></div></div>`);
+};
+window._ds=()=>{ const txt=window._shareTxt||''; if(navigator.share){navigator.share({title:'Menu de la semaine',text:txt}).then(()=>{closeModal();showToast('Partagé !');}).catch(()=>copyFallback(txt));}else copyFallback(txt); };
+const copyFallback=txt=>navigator.clipboard.writeText(txt).then(()=>{closeModal();showToast('Copié ✓');}).catch(()=>showToast('Copie manuelle'));
+
+function showModal(html){ const o=document.getElementById('overlay'); document.getElementById('modal-content').innerHTML=html; o.classList.add('open'); o.onclick=e=>{ if(e.target===o) closeModal(); }; }
+function closeModal(){ document.getElementById('overlay').classList.remove('open'); currentCell=null; }
+window._cm=closeModal;
+
+function showToast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+function showInstallBanner(){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  const isAndroid=/Android/.test(navigator.userAgent);
+  if(window.matchMedia('(display-mode: standalone)').matches||window.navigator.standalone||localStorage.getItem('install-dismissed')) return;
+  const wrap=document.getElementById('install-banner-wrap');
+  if(isIOS) wrap.innerHTML=`<div class="install-banner"><span style="font-size:24px">📲</span><div class="ib-text"><strong>Installer sur iPhone</strong><br>Appuie sur <strong>⎙ Partager</strong> puis <strong>« Sur l'écran d'accueil »</strong></div><button class="ib-close" onclick="window._ib()">✕</button></div>`;
+  else if(isAndroid) wrap.innerHTML=`<div class="install-banner"><span style="font-size:24px">📲</span><div class="ib-text"><strong>Installer sur Android</strong><br>Menu <strong>⋮</strong> puis <strong>« Ajouter à l'écran d'accueil »</strong></div><button class="ib-close" onclick="window._ib()">✕</button></div>`;
+}
+window._ib=()=>{ document.getElementById('install-banner-wrap').innerHTML=''; try{localStorage.setItem('install-dismissed','1');}catch(e){} };
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeModal(); });
+setWeekLabel();
+showInstallBanner();
+</script>
+</body>
+</html>
